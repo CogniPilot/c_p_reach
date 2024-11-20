@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "c-p-reach"
+name = "c_p_reach"
 version = "0.1.0"
 description = ""
 authors = ["James Goppert <james.goppert@gmail.com>"]

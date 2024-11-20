@@ -3,7 +3,7 @@ import pkg_resources
 
 def run():
     version = pkg_resources.get_distribution('c_p_reach').version
-    parser = argparse.ArgumentParser(f'c-p-reach {version:s}')
+    parser = argparse.ArgumentParser(f'c_p_reach {version:s}')
     parser.add_argument("casadi_model")
     args = parser.parse_args()
 
