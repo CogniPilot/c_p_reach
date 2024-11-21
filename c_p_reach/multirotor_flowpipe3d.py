@@ -15,7 +15,9 @@ import pkg_resources
 def run():
     version = pkg_resources.get_distribution('c_p_reach').version
     parser = argparse.ArgumentParser(f'multirotor_flowpipe3d {version:s}')
-    parser.add_argument("trajectory")
+    parser.add_argument("--trajectory", default="traj.json")
+    parser.add_argument("--disturbance_level", default=1.0)
+    parser.add_argument("--plots", action='store_true')
     args = parser.parse_args()
 
     print('beginning reachability analysis for multirotor')
@@ -123,7 +125,7 @@ def run():
     w2 = 0.01 # disturbance for angular (impact alpha)
 
 
-    print('solving LMI')
+    print('solving LMI for dynamics')
     # solve LMI
     sol = find_omega_invariant_set(omega1, omega2, omega3) 
 
@@ -136,9 +138,10 @@ def run():
     omegabound = omega_bound(omega1, omega2, omega3, w2, beta) # result for inner bound
     print(omegabound)
 
-
+    print('solving LMI for kinematics')
     # solve LMI
     sol_LMI = find_se23_invariant_set(ax, ay, az, omega1, omega2, omega3)
+    print(sol_LMI)
 
     # Initial condition
     e = np.array([0,0,0,0,0,0,0,0,0]) # initial error in Lie group (nonlinear)
@@ -157,12 +160,11 @@ def run():
     # map invariant set points to Lie group (nonlinear)
     inv_points = exp_map(points, points_theta)
 
-    do_plots = False
-
-    print('plotting')
+    do_plots = args.plots
 
     if do_plots:
 
+        print('plotting invariant sets')
         plt.figure(figsize=(14,7))
         plt.rcParams.update({'font.size': 12})
         ax1 = plt.subplot(121)
@@ -187,7 +189,9 @@ def run():
         ax1.set_title('Invariant Set in Lie Algebra', fontsize=20)
         ax2.set_title('Invariant Set in Lie Group', fontsize=20)
         # plt.savefig('figures/Invariant_l.eps', format='eps', bbox_inches='tight')
+        plt.show()
 
+        print('plotting invariant sets')
         plt.figure(figsize=(14,7))
         ax1 = plt.subplot(121, projection='3d', proj_type='ortho', elev=40, azim=20)
         # ax.plot3D(e0[0], e0[1], e0[2], 'ro');
@@ -216,13 +220,22 @@ def run():
         # plt.legend(loc=1)
         plt.tight_layout()
         # plt.savefig('figures/Invariant3d_l.eps', format='eps', bbox_inches='tight')
+        plt.show()
 
+        print('calculating interval hull')
         # Calculate convex hull for flow pipes
         n = 30 # number of flow pipes
         flowpipes_traj, intervalhull_traj, nom_traj, t_vect = flowpipes(ref, n, ebeta, w1, omegabound, sol_LMI, 'xy')
+        plt.show()
 
+        print('plotting flow pipes')
         plot_flowpipes(nom_traj, flowpipes_traj, n, 'xy')
+        plt.show()
 
-        plot_sim(ref, w1, omegabound, flowpipes_traj, n, 'xy')
+        # print('plotting sim')
+        # plot_sim(ref, w1, omegabound, flowpipes_traj, n, 'xy')
+        # plt.show()
 
-        plot_timehis(sol_LMI, ref, w1, w2, 40, ebeta)
+        # print('plotting time history')
+        # plot_timehis(sol_LMI, ref, w1, w2, 40, ebeta)
+        # plt.show()
