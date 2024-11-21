@@ -9,7 +9,16 @@ readme = "README.md"
 python = "^3.12"
 casadi = "^3.6.7"
 setuptools = "^75.6.0"
+pytope = "^0.0.4"
+matplotlib = "^3.9.2"
+numpy = "^2.1.3"
+control = "^0.10.1"
+sympy = "^1.13.3"
+picos = "^2.5.1"
 
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.29.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -17,3 +26,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 c_p_reach = 'c_p_reach.console:run'
+multirotor_flowpipe3d = 'c_p_reach.multirotor_flowpipe3d:run'

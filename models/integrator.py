@@ -1,9 +1,8 @@
-
-import casadi as ca
-
 class Integrator:
 
     def __init__(self):
+
+        import casadi as ca
 
         # declare states
         x = ca.SX.sym('x');

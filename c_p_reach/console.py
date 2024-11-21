@@ -7,6 +7,7 @@ def run():
     parser.add_argument("casadi_model")
     args = parser.parse_args()
 
+
     try:
         with open(args.casadi_model, 'r') as f:
             script=f.read()
@@ -14,4 +15,15 @@ def run():
         print(e)
         exit(1)
 
-    exec(script)
+    print(script)
+
+    local_scope = {}
+    exec(script, {}, local_scope)
+    globals().update(local_scope)
+    locals().update(local_scope)
+    print('local scope keys', local_scope.keys())
+    print('local keys', locals().keys())
+    print(Integrator)
+    myint = Integrator()
+    print(myint)
+
