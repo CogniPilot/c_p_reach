@@ -15,7 +15,7 @@ sudo apt install libcdd-dev
 * Build Poetry Package
 
 ```bash
-git clone git@github.com:jgoppert/c_p_reach
+git clone git@github.com:cognipilot/c_p_reach
 cd c_p_reach
 poetry install
 ```
