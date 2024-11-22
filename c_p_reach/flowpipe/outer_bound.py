@@ -51,7 +51,7 @@ def SE23LMIs(alpha, A, B, verbosity=0):
         prob.solve(solver="cvxopt", options={'verbosity': verbosity})
         cost = gam.value
     except Exception as e:
-        print(e)
+        #print('exception', e)
         cost = -1
     return {
         'cost': cost,
@@ -92,11 +92,11 @@ def find_se23_invariant_set(ax,ay,az,omega1,omega2,omega3, verbosity=0):
     # we perform a line search over alpha to find the feasible solution for LMIs
     alpha_list = np.linspace(0.4,0.8,41)
     for a in alpha_list:
-        print(a)
+        #print(a)
         
         sol = SE23LMIs(a, A, B_lie)
         prob = sol['prob']
-        print(prob.status)
+        #print(prob.status)
         if prob.status == 'optimal':
             P = prob.variables['P'].value
             mu1 =  prob.variables['mu_1'].value
@@ -104,7 +104,7 @@ def find_se23_invariant_set(ax,ay,az,omega1,omega2,omega3, verbosity=0):
                 print(sol)
             break
         else:
-            print('Optimization failed, trying next alpha')
+            #print('Optimization failed, trying next alpha')
             continue
         
     return sol

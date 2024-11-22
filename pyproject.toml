@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "c_p_reach"
-version = "0.1.0"
+version = "0.2.4"
 description = ""
 authors = ["James Goppert <james.goppert@gmail.com>"]
 readme = "README.md"
@@ -25,5 +25,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-c_p_reach = 'c_p_reach.console:run'
-multirotor_flowpipe3d = 'c_p_reach.multirotor_flowpipe3d:run'
+c_p_reach = 'c_p_reach.multirotor_flowpipe3d:run'

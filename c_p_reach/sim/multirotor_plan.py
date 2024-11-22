@@ -289,7 +289,7 @@ def planner(bc, cost, n_legs, poly_deg, k_time):
 
     T_opt = sol["x"]
 
-    print("T_opt", T_opt)
+    #print("T_opt", T_opt)
 
     opt_x = cost["f_p"](T_opt, bc[:, :, 0], k_time)
     opt_y = cost["f_p"](T_opt, bc[:, :, 1], k_time)

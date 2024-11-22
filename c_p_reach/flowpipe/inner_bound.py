@@ -15,6 +15,7 @@ def omega_solve_control_gain(omega1, omega2, omega3):
     Q = 10*np.eye(3)  # penalize state
     R = 1*np.eye(3)  # penalize input
     K, _, _ = control.lqr(A, B, Q, R) 
+    #print('K', K)
     K = -K # rescale K, set negative feedback sign
     BK = B@K
     return B, K, BK , A+B@K
