@@ -2,7 +2,11 @@
 name = "c_p_reach"
 version = "0.2.4"
 description = ""
-authors = ["James Goppert <james.goppert@gmail.com>"]
+authors = [
+	"Li-Yu Lin",
+	"Kylie Sommer-Kohrt",
+	"James Goppert <james.goppert@gmail.com>"
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]
