@@ -123,12 +123,12 @@ def run():
         traj_x = compute_trajectory(ref['x'], ref['T'], poly_deg=poly_deg, deriv=0) # points
         traj_y = compute_trajectory(ref['y'], ref['T'], poly_deg=poly_deg, deriv=0)
         traj_z = compute_trajectory(ref['z'], ref['T'], poly_deg=poly_deg, deriv=0)
-        ax = fig.add_subplot(111, projection="3d")
-        ax.plot(ref["x"], ref["y"], ref["z"]);
-        ax.set_xlabel('x, m', labelpad=10)
-        ax.set_ylabel('y, m', labelpad=12)
-        ax.set_zlabel('z, m', rotation=90, labelpad=8)
-        ax.set_title('Reference Trajectory')
+        axis = fig.add_subplot(111, projection="3d")
+        axis.plot(ref["x"], ref["y"], ref["z"]);
+        axis.set_xlabel('x, m', labelpad=10)
+        axis.set_ylabel('y, m', labelpad=12)
+        axis.set_zlabel('z, m', rotation=90, labelpad=8)
+        axis.set_title('Reference Trajectory')
         plt.axis('auto')
         plt.tight_layout()
 
