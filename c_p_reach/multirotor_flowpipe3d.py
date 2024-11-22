@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import casadi as ca
-import time
 import os
 
 from c_p_reach.lie.SE23 import *
@@ -132,9 +131,7 @@ def run():
         plt.axis('auto')
         plt.tight_layout()
 
-        plt.show()
         plt.savefig('fig/reference_trajectory.png')
-        time.sleep(1)
         plt.close()
 
     print('solving LMI for dynamics')
@@ -222,9 +219,7 @@ def run():
         plt.tight_layout()
         ax1.set_title('Invariant Set in Lie Algebra', fontsize=20)
         ax2.set_title('Invariant Set in Lie Group', fontsize=20)
-        plt.show()
         plt.savefig('fig/Invariant_l.png')
-        time.sleep(1)
         plt.close()
 
     if do_plots:
@@ -257,8 +252,6 @@ def run():
         # plt.legend(loc=1)
         plt.tight_layout()
         plt.savefig('fig/Invariant3d_l.png')
-        plt.show()
-        time.sleep(1)
         plt.close()
 
 
@@ -267,21 +260,16 @@ def run():
         # Calculate convex hull for flow pipes
         n = 30 # number of flow pipes
         flowpipes_traj, intervalhull_traj, nom_traj, t_vect = flowpipes(ref, n, ebeta, w1, omegabound, sol_LMI, 'xy')
-        plt.show()
         plt.savefig('fig/interval_hull.png')
-        time.sleep(1)
         plt.close()
 
         print('plotting flow pipes')
         plot_flowpipes(nom_traj, flowpipes_traj, n, 'xy')
         plt.savefig('fig/flow_pipes.png')
-        time.sleep(1)
         plt.close()
 
         # print('plotting sim')
         # plot_sim(ref, w1, omegabound, flowpipes_traj, n, 'xy')
-        # plt.show()
 
         # print('plotting time history')
         # plot_timehis(sol_LMI, ref, w1, w2, 40, ebeta)
-        # plt.show()
