@@ -29,7 +29,15 @@ poetry shell
 ```
 Next, call the reachability tool.
 ```bash
-multirotor_flowpipe3d
+c_p_reach
 ```
 
+# Roadmap
 
+## Working
+* Multirotor 3D support
+* Support Rover
+
+## TODO
+* Auto-read gains from CasADi model
+* Take vehicle trajectory as input
