@@ -1,0 +1,11 @@
+{
+    "eps_controller": 28,
+    "emi_disturbance": 20,
+    "x_0": 0,
+    "y_0": 0,
+    "x_f": 0,
+    "y_f": 15,
+    "width": 0.294,
+    "COM_height": 0.064,
+    "turn_radius": 7
+  }

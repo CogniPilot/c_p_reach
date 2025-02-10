@@ -11,12 +11,6 @@ from c_p_reach.flowpipe.flowpipe import *
 from c_p_reach.sim.multirotor_control import *
 from c_p_reach.sim.multirotor_plan import *
 
-import c_p_reach.rover.emi_analysis as emi_analysis
-import c_p_reach.rover.roll_over_analysis as roll_over_analysis
-
-import pandas as pd
-
-
 import sympy
 import sympy.physics.mechanics as me
 
@@ -50,11 +44,119 @@ def run():
         f = open(args.rover_specs)
         rover = json.load(f)
 
-        # Steering Exploit (Reachable set with EMI interference to magnetometer
-        emi_analysis.analyze(rover)
+        # Steering Exploit (Reachable set with bang-bang controller and EMI interference with Magnometer)
+        pi= math.pi
+        epsilon = rover['eps_controller'] * pi/180 # Bang-bang controller value.
+        disturbance = rover['emi_disturbance']*pi/180 # Magnetometer Disturbance.
+        y_0 = rover['y_0'] # Initial y position
+        x_0 = rover['x_0'] # Initial x position
+        y_f = rover['y_f'] # Final y position
+        x_f = rover['x_f'] # Final x position
+        step_size = 0.01
+
+
+        X = np.arange(x_0,0,step_size)
+        Y = np.zeros_like(X)
+        Y2 = np.zeros_like(X)
+        y = y_0
+        y2 = y_0
+        
+        for i,x in enumerate(X):
+            theta_h = math.atan2(y-y_f,x-x_f) + disturbance
+            dy_dx = math.tan(math.atan2(y-y_f,x-x_f)+ epsilon - disturbance)
+            dy_dx_2 = math.tan(math.atan2(y2-y_f,x-x_f) -epsilon - disturbance)
+            Y[i] = y
+            Y2[i] = y2
+            y = y + dy_dx*step_size
+            y2 = y2 + dy_dx_2*step_size
+            
+            #print(f"x: {x:.2f}, y: {y:.2f}, theta_h: {theta_h*180/pi:.2f}, theta: {math.atan(dy_dx)*180/pi:.2f}, dy_dx: {dy_dx:.3f}")
+
+        plt.plot(X,Y,zorder = 4,color="blue")
+        plt.plot(X,Y2,zorder = 4, color="blue")
+        plt.fill_between(X, Y, Y2, alpha=0.3, color="blue")
+        #plt.fill_between(X, Y2, 0, alpha=0.3, color="blue")
+        plt.scatter(x_0, y_0, color="black",zorder=5)
+        plt.annotate('Rover', (x_0+0.8, y_0-0.6), textcoords="offset points", xytext=(10,10), ha='center', zorder=10)
+        plt.scatter(x_f, y_f, color="black",zorder=5)
+        plt.annotate('Goal', (x_f-1, y_f-0.6), textcoords="offset points", xytext=(10,10), ha='center', zorder=10)
+        ax = plt.subplot(1,1,1)
+        
+        # ax.plot(x_0,y_0,'bo')
+        ax.set_xlabel('X-position of Rover (m)')
+        ax.set_ylabel('Y-position of Rover (m)')
+        ax.set_axisbelow(True)
+        plt.grid(True)
+        # plt.legend(loc=1)
+        plt.axis('equal')
+        #plt.tight_layout()
+        ax.set_title(f'Possible Locations for Rover With a Disturbance of {disturbance*180/pi:.2f}$\\degree$', fontsize=14)
+        plt.savefig("fig/rover_reachable_positions.png")
+        plt.close()
+        
 
         # Roll-over explot
-        roll_over_analysis.analyze(rover)
+        m, g, v, r = sympy.symbols('m, g, v, r', real=True)
+        theta_t, theta_f, theta, l = sympy.symbols('theta_t, theta_f, theta, l',real=True)
+        frame_e = me.ReferenceFrame('e') # earth local level frame
+        frame_t = frame_e.orientnew('t', 'Axis', (frame_e.z, theta_t)) # terrain frame
+        frame_b = frame_t.orientnew('b', 'Axis', (frame_e.z, theta)) # terrain frame
+        frame_f = frame_b.orientnew('f', 'Axis', (frame_e.z, theta_f)) # body frame
+        # position vector from tire rotation point to center of mass
+        r_ap = l*frame_f.x
+        W = -m*g*frame_e.y
+        Fc = -(m*v**2/r)*frame_t.x
+        F = W + Fc
+        M = r_ap.cross(F)
+
+        eq1 = (M.to_matrix(frame_e)[2]/(g*l*m)).simplify()
+        eq2 = eq1.subs(theta, 0)
+        print(eq1, eq2)
+        v_expr = sympy.solve(eq1.subs(theta, 0), v)[1]
+
+        def plot_roll_over_analysis(theta_f_val,rad):
+            f_v_expr = sympy.lambdify([g, r, theta_f, theta_t], [v_expr])
+            
+            plt.figure()
+            for r_val in [rad]:
+                theta_t_vals = np.linspace(0, np.pi/2-theta_f_val, 1000)
+                v_vals = f_v_expr(g=9.8, r=r_val, theta_f=theta_f_val,theta_t=theta_t_vals)[0]
+                plt.plot(np.rad2deg(theta_t_vals), v_vals, label='r={:4.0f} m'.format(r_val))
+            #plt.plot(9.17,10,'ro',label='unsuccessful')
+            #plt.plot(9.17,15,'go',label='successful')
+            plt.fill_between(np.rad2deg(theta_t_vals), v_vals, 0, alpha=0.3, color="green",label='safe')
+            plt.fill_between(np.rad2deg(theta_t_vals), v_vals, 50, alpha=0.3, color="red",label='unsafe')
+            #plt.fill_between(X, Y2, 0, alpha=0.3, color="blue")
+            plt.grid()
+            plt.xlabel('Terrain Angle [deg]')
+            plt.ylabel('Velocity for Roll Over [m/s]')
+            plt.title('Roll Over Velocity $\\theta_f$ = {:0.1f} deg'.format(np.rad2deg(theta_f_val)))
+            plt.legend()
+            plt.ylim(bottom=0,top=17)
+
+            # Individual points
+            terrain_angles = [ 0. 10. 20. 30. 40. 50. 60.]
+            velocities = [ 4  6  8 10 12 14]
+            results = [['S', 'S', 'S', 'S', 'S', 'U'], ['S', 'S', 'S', 'S', 'U', 'U'], ['S', 'S', 'S', 'S', 'U', 'U'], ['S', 'S', 'S', 'S', 'U', 'U'], ['S', 'S', 'S', 'U', 'U', 'U'], ['S', 'S', 'U', 'U', 'U', 'U'], ['S', 'U', 'U', 'U', 'U', 'U']]
+            
+            for t,t_angle in enumerate(terrain_angles):
+                for v,vel in enumerate(velocities):
+                    if results[t,v] == "S":
+                        sim_color = "green"
+                    else:
+                        sim_color = "red"
+                plt.scatter(t_angle, vel, color=sim_color, zorder=5)
+
+            # Save plot
+            plt.savefig('fig/roll_over_velocity.png',format='png')
+        
+        #lx = 1/2 rover width
+        lx = rover['width']/2#0.105
+        #ly = COM to ground
+        ly = rover['COM_height']#0.06
+        # Turn radius
+        rad=rover['turn_radius']
+        plot_roll_over_analysis(theta_f_val=np.arctan(ly/lx), rad=rad)
 
                 
 
