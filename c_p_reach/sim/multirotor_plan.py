@@ -361,4 +361,82 @@ def planner(bc, cost, n_legs, poly_deg, k_time):
         "omega1":romega1,
         "omega2":romega2,
         "omega3":romega3,
+        "poly_deg": poly_deg
     }
+
+def default_trajectory():
+    n_legs = 10
+    poly_deg = 7
+    min_deriv = 4  # min snap
+    bc_deriv = 4
+    bc = np.array(
+            [  # boundary conditions
+                [
+                    [0, 0, 0],
+                    [1, 0, 0],
+                    [1, 1, 1],
+                    [2, 1, 1],
+                    [2, 2, 1],
+                    [1, 2, 0],
+                    [0, 2, 0],
+                    [-1, 2, 0],
+                    [-2,2,0],
+                    [-2,1,0],
+                    [-2,0,0]
+                ],  # pos
+                [
+                    [0, 0, 0],
+                    [0.3, 0, 0],
+                    [0, 0.3, 0.3],
+                    [0.3, 0, 0],
+                    [0, 0.3, 0],
+                    [-0.3, 0, 0],
+                    [-0.3, 0, -0.3],
+                    [-0.3, 0, 0],
+                    [-0.3, 0, 0],
+                    [0, -0.3, 0],
+                    [0, 0, 0]
+                ],  # vel
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0]
+                ],  # acc
+                [
+                    [0, 0, 0], 
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0]
+                ],
+            ]  # jerk
+        )
+    k_time = 1e5
+
+    #print('finding cost function')
+    cost = find_cost_function(
+        poly_deg=poly_deg,
+        min_deriv=min_deriv,
+        rows_free=[],
+        n_legs=n_legs,
+        bc_deriv=bc_deriv,
+    )
+    
+
+    #print('planning trajectory')
+    ref = planner(bc, cost, n_legs, poly_deg, k_time)
+    return ref

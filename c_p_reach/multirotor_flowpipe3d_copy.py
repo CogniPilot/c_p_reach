@@ -3,18 +3,24 @@ import matplotlib.pyplot as plt
 import casadi as ca
 import json
 import os
-import argparse
-import pkg_resources
 
-import c_p_reach.lie.SE23 as SE23
-import c_p_reach.flowpipe.inner_bound  as inner_bound
-import c_p_reach.flowpipe.outer_bound as outer_bound
-import c_p_reach.flowpipe.flowpipe as flowpipe
-#import c_p_reach.sim.multirotor_control as mr_control
-import c_p_reach.sim.multirotor_plan as mr_plan
+from c_p_reach.lie.SE23 import *
+from c_p_reach.flowpipe.inner_bound import *
+from c_p_reach.flowpipe.outer_bound import *
+from c_p_reach.flowpipe.flowpipe import *
+from c_p_reach.sim.multirotor_control import *
+from c_p_reach.sim.multirotor_plan import *
 
 import c_p_reach.rover.emi_analysis as emi_analysis
 import c_p_reach.rover.roll_over_analysis as roll_over_analysis
+
+import pandas as pd
+
+import sympy
+import sympy.physics.mechanics as me
+
+import argparse
+import pkg_resources
 
 def run():
     version = pkg_resources.get_distribution('c_p_reach').version
@@ -53,19 +59,93 @@ def run():
         # Roll-over explot
         roll_over_analysis.analyze(rover)
 
+
     # Mulirotor Analysis
     else:
-        print('Beginning Reachability Analysis for Multirotor')
+        print('beginning reachability analysis for multirotor')
+        
+        n_legs = 10
+        poly_deg = 7
+        min_deriv = 4  # min snap
+        bc_deriv = 4
+
         # Set disturbance here
         w1 = 0.0 # disturbance for translational (impact a)  thrust disturbance for outer loop
-        w2 = args.gyro_noise # disturbance for angular (impact alpha)  inner loop angular disturbance BKd
+        w2 = args.gyro_noise # disturbance for angular (impact alpha)  inner loop angular disturbance  BKd
         #w2 = np.linalg.svd(BK).S[0]*args.gyro_noise
 
+       
         print('reading trajectory')
          # Trajectory generation
-        ref = mr_plan.default_trajectory()
+        bc = np.array(
+                [  # boundary conditions
+                    [
+                        [0, 0, 0],
+                        [1, 0, 0],
+                        [1, 1, 1],
+                        [2, 1, 1],
+                        [2, 2, 1],
+                        [1, 2, 0],
+                        [0, 2, 0],
+                        [-1, 2, 0],
+                        [-2,2,0],
+                        [-2,1,0],
+                        [-2,0,0]
+                    ],  # pos
+                    [
+                        [0, 0, 0],
+                        [0.3, 0, 0],
+                        [0, 0.3, 0.3],
+                        [0.3, 0, 0],
+                        [0, 0.3, 0],
+                        [-0.3, 0, 0],
+                        [-0.3, 0, -0.3],
+                        [-0.3, 0, 0],
+                        [-0.3, 0, 0],
+                        [0, -0.3, 0],
+                        [0, 0, 0]
+                    ],  # vel
+                    [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0]
+                    ],  # acc
+                    [
+                        [0, 0, 0], 
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0]
+                    ],
+                ]  # jerk
+            )
+        k_time = 1e5
 
-        # Maximum translational and angular acceleration in ref trajectory.
+        print('finding cost function')
+        cost = find_cost_function(
+            poly_deg=poly_deg,
+            min_deriv=min_deriv,
+            rows_free=[],
+            n_legs=n_legs,
+            bc_deriv=bc_deriv,
+        )
+
+        print('planning trajectory')
+        ref = planner(bc, cost, n_legs, poly_deg, k_time)
         ax = [np.max(ref['ax'])]
         ay = [np.max(ref['ay'])]
         az = [-np.min(ref['az'])+9.8]
@@ -73,12 +153,11 @@ def run():
         omega2 = [np.max(ref['omega2'])]
         omega3 = [np.max(ref['omega3'])]
 
-        # Plot trajectory.
         if do_plots:
             fig = plt.figure(figsize=(8,8))
-            traj_x = mr_plan.compute_trajectory(ref['x'], ref['T'], poly_deg=ref['poly_deg'], deriv=0) # points
-            traj_y = mr_plan.compute_trajectory(ref['y'], ref['T'], poly_deg=ref['poly_deg'], deriv=0)
-            traj_z = mr_plan.compute_trajectory(ref['z'], ref['T'], poly_deg=ref['poly_deg'], deriv=0)
+            traj_x = compute_trajectory(ref['x'], ref['T'], poly_deg=poly_deg, deriv=0) # points
+            traj_y = compute_trajectory(ref['y'], ref['T'], poly_deg=poly_deg, deriv=0)
+            traj_z = compute_trajectory(ref['z'], ref['T'], poly_deg=poly_deg, deriv=0)
             axis = fig.add_subplot(111, projection="3d")
             axis.plot(ref["x"], ref["y"], ref["z"]);
             axis.set_xlabel('x, m', labelpad=10)
@@ -87,33 +166,31 @@ def run():
             axis.set_title('Reference Trajectory')
             plt.axis('auto')
             plt.tight_layout()
+
             plt.savefig('fig/reference_trajectory.png')
             plt.close()
 
-
-        # Rotational (omega) bound
         print('solving LMI for dynamics')
         # solve LMI
         # J omega_dot = k_rollrate * (roll_rate_ref - (roll_rate + gyro_disturbance))
         # J omega_dot = k_rollrate * (roll_rate_ref - roll_rate) + k_rollrate * gyro_disturbance
 
-        sol, max_BK = inner_bound.find_omega_invariant_set(omega1, omega2, omega3)
-        # max_BK is the maximum eigenvalue of BK
+        sol = find_omega_invariant_set(omega1, omega2, omega3) 
         mu_inner = sol['mu1']
+        #print(mu_inner)
 
         # Initial condition
         P = sol['P']
         e0 = np.array([0,0,0]) # initial error
         beta = (e0.T@P@e0) # initial Lyapnov value
-        print(f'Beta: {beta}')
 
         # find bound
-        omegabound = inner_bound.omega_bound(omega1, omega2, omega3, w2, beta) # result for inner bound
+        omegabound = omega_bound(omega1, omega2, omega3, w2, beta) # result for inner bound
+        #print(omegabound)
 
-        # Translational (ax,ay,az) LMI.
         print('solving LMI for kinematics')
         # solve LMI
-        sol_LMI = outer_bound.find_se23_invariant_set(ax, ay, az, omega1, omega2, omega3)
+        sol_LMI = find_se23_invariant_set(ax, ay, az, omega1, omega2, omega3)
         mu_outer = sol_LMI['mu3']
         #print(mu_outer)
 
@@ -121,18 +198,18 @@ def run():
         e = np.array([0,0,0,0,0,0,0,0,0]) # initial error in Lie group (nonlinear)
 
         # transfer initial error to Lie algebra (linear)
-        e0 = ca.DM(SE23.SE23Dcm.vee(SE23.SE23Dcm.log(SE23.SE23Dcm.matrix(e))))
+        e0 = ca.DM(SE23Dcm.vee(SE23Dcm.log(SE23Dcm.matrix(e))))
         e0 = np.array([e0]).reshape(9,)
         ebeta = e0.T@sol_LMI['P']@e0
 
         print('finding invariant set')
 
         # find invairant set points in Lie algebra (linear)
-        points, val = outer_bound.se23_invariant_set_points(sol_LMI, 20, w1, omegabound, ebeta)
-        points_theta, val = outer_bound.se23_invariant_set_points_theta(sol_LMI, 20, w1, omegabound, ebeta)
+        points, val = se23_invariant_set_points(sol_LMI, 20, w1, omegabound, ebeta)
+        points_theta, val = se23_invariant_set_points_theta(sol_LMI, 20, w1, omegabound, ebeta)
 
         # map invariant set points to Lie group (nonlinear)
-        inv_points = outer_bound.exp_map(points, points_theta)
+        inv_points = exp_map(points, points_theta)
 
         # currently assumes
         # x_dot = Ax + BKx + d
@@ -141,18 +218,17 @@ def run():
 
         # BK = 3 for inner loop
         # x_inf  < mu d_inf
+        BK = 3
 
-        # BK = 3
-        # mu_total = (mu_outer*mu_inner)*BK
-        mu_total = (mu_outer*mu_inner)*max_BK
+        mu_total = (mu_outer*mu_inner)*BK
         gyro_noise_req_for_attitude_target = args.attitude_target/mu_total
         gyro_noise_req_for_position_target = args.position_target/mu_total
         print('\n\n==============================================================')
         print('RESULTS')
         print('==============================================================')
         print('mu_total', mu_total)
-        print(f'gyro disturbance req for attitude target {args.attitude_target} rad: {gyro_noise_req_for_attitude_target} rad/s')
-        print(f'gyro disturbance req for position target {args.position_target} m: {gyro_noise_req_for_position_target} rad/s')
+        print('gyro noise req for attitude target:', gyro_noise_req_for_attitude_target)
+        print('gyro noise req for position target:', gyro_noise_req_for_position_target)
 
         if do_plots:
             print('plotting 2D invariant sets')
@@ -219,12 +295,12 @@ def run():
             print('calculating interval hull')
             # Calculate convex hull for flow pipes
             n = 30 # number of flow pipes
-            flowpipes_traj, intervalhull_traj, nom_traj, t_vect = flowpipe.flowpipes(ref, n, ebeta, w1, omegabound, sol_LMI, 'xy')
+            flowpipes_traj, intervalhull_traj, nom_traj, t_vect = flowpipes(ref, n, ebeta, w1, omegabound, sol_LMI, 'xy')
             plt.savefig('fig/interval_hull.png')
             plt.close()
 
             print('plotting flow pipes')
-            flowpipe.plot_flowpipes(nom_traj, flowpipes_traj, n, 'xy')
+            plot_flowpipes(nom_traj, flowpipes_traj, n, 'xy')
             plt.savefig('fig/flow_pipes.png')
             plt.close()
 

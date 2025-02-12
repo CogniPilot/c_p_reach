@@ -36,7 +36,7 @@ def omegaLMIs(alpha, A, B, verbosity=0):
         prob.solve(solver="cvxopt", options={'verbosity': verbosity})
         cost = mu1.value
     except Exception as e:
-        print(e)
+        print(f"Exception: {e}")
         cost = -1
     return {
         'cost': cost,
@@ -47,6 +47,7 @@ def omegaLMIs(alpha, A, B, verbosity=0):
         }
 
 def find_omega_invariant_set(omega1, omega2, omega3, verbosity=0):
+    # input is max angular velocity in ref trajectory for each of three dimensions.
     iterables =[omega1, omega2, omega3]
     omega = []
     for m in itertools.product(*iterables):
@@ -59,7 +60,9 @@ def find_omega_invariant_set(omega1, omega2, omega3, verbosity=0):
         omega1 = omegai[0]
         omega2 = omegai[1]
         omega3 = omegai[2]
+        # LQR Control (I think)
         B, K, BK, Ai = omega_solve_control_gain(omega1, omega2, omega3)
+        max_BK = np.linalg.svd(BK).S[0]
         A.append(Ai)
         eig.append(np.linalg.eig(Ai)[0])
     
@@ -68,11 +71,14 @@ def find_omega_invariant_set(omega1, omega2, omega3, verbosity=0):
         print('line search')
     
     # we perform a line search over alpha to find the largest convergence rate possible
+    #print(f'Eigenvalues {eig}')
     alpha_1 = -np.real(np.max(eig)) # smallest magnitude value from eig-value, and range has to be positive
+    #print(f'alpha_1: {alpha_1}')
     alpha_opt = scipy.optimize.fminbound(lambda alpha: omegaLMIs(alpha, A, B, verbosity=verbosity)['cost'], x1=1e-5, x2=alpha_1, disp=True if verbosity > 0 else False)
-    
+    #print(f'optimal alpha {alpha_opt}')
     # if the alpha optimization fail, pick a fixed value for alpha.
     sol = omegaLMIs(alpha_opt, A, B)
+    #print(f'mu1: {sol['mu1']}, cost: {sol['cost']}')
     prob = sol['prob']
     if prob.status == 'optimal':
         P = prob.variables['P'].value
@@ -82,7 +88,7 @@ def find_omega_invariant_set(omega1, omega2, omega3, verbosity=0):
     else:
         raise RuntimeError('Optimization failed')
         
-    return sol
+    return sol,max_BK
 
 def omega_invariant_set_points(sol, t, w1_norm, beta): # w1_norm: distrubance in alpha  
     P = sol['P']
@@ -108,7 +114,7 @@ def omega_invariant_set_points(sol, t, w1_norm, beta): # w1_norm: distrubance in
     return R@points, val
 
 def omega_bound(omega1, omega2, omega3, a_dist, beta):
-    sol = find_omega_invariant_set(omega1, omega2, omega3)
+    sol, _ = find_omega_invariant_set(omega1, omega2, omega3)
     points, _ = omega_invariant_set_points(sol, 20, a_dist, beta) 
     max_omega1 = points[0,:].max()
     min_omega1 = abs(points[0,:].min())
