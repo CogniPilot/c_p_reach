@@ -62,7 +62,8 @@ def find_omega_invariant_set(omega1, omega2, omega3, verbosity=0):
         omega3 = omegai[2]
         # LQR Control (I think)
         B, K, BK, Ai = omega_solve_control_gain(omega1, omega2, omega3)
-        max_BK = np.linalg.svd(BK).S[0]
+        #max_BK = np.linalg.svd(BK).S[0]
+        max_BK = 1/np.sqrt(np.linalg.svd(BK).S[2])
         A.append(Ai)
         eig.append(np.linalg.eig(Ai)[0])
     

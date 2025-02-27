@@ -13,7 +13,6 @@ from c_p_reach.lie.SE23 import *
 # https://dspace.mit.edu/bitstream/handle/1721.1/106840/Roy_Polynomial%20trajectory.pdf?sequence=1&isAllowed=y
 
 
-
 def find_Q(deriv, poly_deg, n_legs):
     """
     Finds the cost matrix Q
