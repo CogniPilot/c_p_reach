@@ -1,4 +1,5 @@
 import sympy
+import pandas as pd
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
@@ -425,6 +426,63 @@ def default_trajectory():
             ]  # jerk
         )
     k_time = 1e5
+
+    #print('finding cost function')
+    cost = find_cost_function(
+        poly_deg=poly_deg,
+        min_deriv=min_deriv,
+        rows_free=[],
+        n_legs=n_legs,
+        bc_deriv=bc_deriv,
+    )
+    
+
+    #print('planning trajectory')
+    ref = planner(bc, cost, n_legs, poly_deg, k_time)
+    return ref
+
+
+
+def traj_from_coords(coordinates_file):
+    # If no coordinates were specified, use default trajectory.
+    if coordinates_file == "":
+        ref = default_trajectory()
+        return ref
+
+    # Otherwise, get trajectory from coordinates
+    data = pd.read_csv(coordinates_file)
+    num_coords = data.shape[0]
+    n_legs = num_coords-1 # Number of coordinates - 1
+    poly_deg = 7
+    min_deriv = 4  # min snap
+    bc_deriv = 4
+
+    pos = [[data['X'][i],data['Y'][i],data['Z'][i]] for i in range(num_coords)]
+
+
+    # Smooth trajectory by allowing slight velocity difference at altered points.
+    # Iterate through each coordinate.
+    vel_thresh = 0.3
+    vel = [[0,0,0] for i in range(num_coords)]
+    for i in range(num_coords-1):
+        # Iterate through each axis
+        for j in range(3):
+            diff = pos[i+1][j] - pos[i][j]
+            if diff > 0:
+                vel[i+1][j] = vel_thresh*diff
+            elif diff < 0:
+                vel[i+1][j] = vel_thresh*diff
+            else:
+                vel[i+1][j] = 0
+
+    
+    acc = [[0,0,0] for i in range(num_coords)]
+    jerk = [[0,0,0] for i in range(num_coords)]
+    
+
+    bc = np.stack((pos,vel,acc,jerk))
+    print(bc)
+    k_time = 1
 
     #print('finding cost function')
     cost = find_cost_function(

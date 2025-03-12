@@ -5,7 +5,6 @@ description = ""
 authors = [
 	"Li-Yu Lin",
 	"Kylie Sommer-Kohrt",
-	"Micah Condie",
 	"James Goppert <james.goppert@gmail.com>"
 ]
 readme = "README.md"
@@ -33,4 +32,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-c_p_reach = 'c_p_reach.main:run'
+c_p_reach = 'c_p_reach.multirotor_flowpipe3d:run'

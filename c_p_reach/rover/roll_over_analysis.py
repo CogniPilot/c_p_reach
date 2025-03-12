@@ -53,6 +53,7 @@ def analyze(rover):
 
         # Save plot
         plt.savefig('fig/roll_over_velocity.png',format='png')
+        plt.savefig('/home/micah/example/roll_over_velocity.png',format='png')
 
     #lx = 1/2 rover width
     lx = rover['width']/2#0.105

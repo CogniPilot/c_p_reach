@@ -171,4 +171,6 @@ def analyze(rover):
     #plt.tight_layout()
     ax.set_title(f'Possible Trajectories for Rover With a Disturbance of {disturbance:.0f}$\\degree$', fontsize=14)
     plt.savefig("fig/rover_reachable_positions.png")
+    plt.savefig("/home/micah/example/rover_reachable_positions.png")
+    
     plt.close()
