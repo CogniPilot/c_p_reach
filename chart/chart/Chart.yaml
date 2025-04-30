@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cp-reach
+description: Helm chart for Purdue's CpReach tool
+type: application
+
+version: 0.0.0
+appVersion: "0.0.0"

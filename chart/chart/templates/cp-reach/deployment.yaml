@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gui
+  labels:
+    app: gui
+spec:
+  selector:
+    matchLabels:
+      app: gui
+  template:
+    metadata:
+      labels:
+        app: gui
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.images.credentialName }}  
+      containers:
+        - name: gui
+          image: {{ .Values.images.url }}/{{ .Values.gui.image}}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gui.port }}
+              protocol: TCP

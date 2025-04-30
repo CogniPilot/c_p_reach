@@ -1,0 +1,19 @@
+
+cluster_host: fire-local.cromulence.com 
+exposed_url: cp-reach
+
+
+images:
+  url: ub-registry.mlb.cromulence.com:5050
+  pullPolicy: Always
+  username: Jason.Berger
+  password: vsMvUaHnynxcyUu2JxYf
+  credentialName: cromulence-creds
+
+registry: 
+  image: registry:2
+  port: 5000
+gui:
+  image: fire/tools/cp-reach/gui:latest
+  port: 8501
+
