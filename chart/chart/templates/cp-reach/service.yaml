@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gui
+  labels:
+    app: gui
+spec:
+  ports:
+    - name: gui  
+      port: {{ .Values.gui.port }}
+      targetPort: http
+      protocol: TCP
+
+  selector:
+    app: gui

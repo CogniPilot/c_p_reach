@@ -1,0 +1,19 @@
+
+cluster_host: myCluster.com 
+exposed_url: cp-reach
+
+
+images:
+  url: myDockerRegistry.com:5050
+  pullPolicy: Always
+  username: username
+  password: password
+  credentialName: registry-creds
+
+registry: 
+  image: registry:2
+  port: 5000
+gui:
+  image: fire/tools/cp-reach/gui:latest
+  port: 8501
+
