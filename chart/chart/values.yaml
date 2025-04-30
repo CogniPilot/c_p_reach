@@ -1,14 +1,14 @@
 
-cluster_host: fire-local.cromulence.com 
+cluster_host: myCluster.com 
 exposed_url: cp-reach
 
 
 images:
-  url: ub-registry.mlb.cromulence.com:5050
+  url: myDockerRegistry.com:5050
   pullPolicy: Always
-  username: Jason.Berger
-  password: vsMvUaHnynxcyUu2JxYf
-  credentialName: cromulence-creds
+  username: username
+  password: password
+  credentialName: registry-creds
 
 registry: 
   image: registry:2
